@@ -69,5 +69,7 @@ jobs:
             - Automated Nuitka build
             - Bundled WHOIS.exe v1.21
             - Fixed dependency inclusion
+            - Signed build using SignPath
+            - Build v${{ github.ref_name }}
           draft: false
           prerelease: false
