@@ -21,18 +21,18 @@ jobs:
         id: extract_version
         shell: pwsh
         run: |
-          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]
-          $version = $rawTag.TrimStart("v")
+          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]      # Extract tag like "v1.0"
+          $version = $rawTag.TrimStart("v")                  # Remove "v" prefix
       
-          # Ensure format is X.Y.Z
-          $dotCount = ($version -split '\.').Count - 1
-          if ($dotCount -eq 1) {
-            $version = "$version.0"
-          } elseif ($dotCount -eq 0) {
-            $version = "$version.0.0"
+          # Ensure version has 3 parts (X.Y.Z)
+          $parts = $version.Split(".")
+          while ($parts.Count -lt 3) {
+            $parts += "0"
           }
+          $fileVersion = $parts[0..2] -join "."              # Use only 3 parts
       
-          "FILE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "FILE_VERSION=$fileVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
 
 
       - name: Install dependencies
