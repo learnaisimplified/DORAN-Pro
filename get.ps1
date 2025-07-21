@@ -1,5 +1,5 @@
 # Define download location
-$exeUrl = "https://github.com/learnaisimplified/DORAN-Pro/releases/download/v1.2.3/DORAN.exe"
+$exeUrl = "https://github.com/learnaisimplified/DORAN-Pro/releases/download/v1.0.1/DORAN.exe"
 $tempExe = "$env:TEMP\DORAN.exe"
 
 # Kill any running DORAN.exe (ignore errors)
