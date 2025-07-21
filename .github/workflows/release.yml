@@ -17,11 +17,19 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          RAW_TAG="${{ github.ref_name }}"
+          VERSION="${RAW_TAG#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "FILE_VERSION=${VERSION}.0" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install nuitka whois dnspython requests
-    
+
       - name: Build with Nuitka
         run: |
           python -m nuitka `
@@ -34,15 +42,15 @@ jobs:
             --include-module=socket,ssl,json,datetime,concurrent.futures,os,sys,time,hashlib `
             --windows-company-name="DORAN Pro" `
             --windows-product-name="DORAN Pro" `
-            --windows-file-version="${{ github.ref_name }}" `
-            --windows-product-version="${{ github.ref_name }}" `
+            --windows-file-version="${{ env.FILE_VERSION }}" `
+            --windows-product-version="${{ env.FILE_VERSION }}" `
             --output-dir=dist `
             src/DORAN.py
 
       - name: Upload unsigned artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DORAN-Pro-unsigned-${{ github.ref_name }}
+          name: DORAN-Pro-unsigned-${{ env.VERSION }}
           path: dist/DORAN.exe
 
       - name: Upload to SignPath for code signing
@@ -72,6 +80,6 @@ jobs:
             - Bundled WHOIS.exe v1.21
             - Fixed dependency inclusion
             - Signed build using SignPath
-            - Build version: ${{ github.ref_name }}
+            - Build version: v${{ env.VERSION }}
           draft: false
           prerelease: false
