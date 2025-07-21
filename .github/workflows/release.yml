@@ -8,6 +8,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,31 +18,35 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Extract version from tag
-        id: extract_version
-        shell: pwsh
-        run: |
-          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]  # Extract tag like "v1.0"
-          $version = $rawTag.TrimStart("v")             # Remove "v" prefix
-      
-          # Ensure it's in the form of X.Y.Z
-          $parts = $version.Split(".")
-          while ($parts.Count -lt 3) {
-            $parts += "0"
-          }
-          $version3 = $parts[0..2] -join "."
-      
-          "FILE_VERSION=$version3" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install nuitka whois dnspython requests
 
+      - name: Extract version from tag
+        id: extract_version
+        shell: pwsh
+        run: |
+          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]
+          if ($rawTag.StartsWith("v")) {
+            $version = $rawTag.Substring(1)
+          } else {
+            $version = $rawTag
+          }
+
+          $parts = $version.Split(".")
+          while ($parts.Count -lt 3) {
+            $parts += "0"
+          }
+          $version3 = $parts[0..2] -join "."
+
+          echo "🔢 Version resolved: $version3"
+          "FILE_VERSION=$version3" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Build with Nuitka
         shell: pwsh
         run: |
+          echo "🚧 Building with version: $env:FILE_VERSION"
           python -m nuitka `
             --onefile `
             --standalone `
@@ -52,15 +57,15 @@ jobs:
             --include-module=socket,ssl,json,datetime,concurrent.futures,os,sys,time,hashlib `
             --windows-company-name="DORAN Pro" `
             --windows-product-name="DORAN Pro" `
-            --windows-file-version="${env:FILE_VERSION}" `
-            --windows-product-version="${env:FILE_VERSION}" `
+            --windows-file-version="$env:FILE_VERSION" `
+            --windows-product-version="$env:FILE_VERSION" `
             --output-dir=dist `
             src/DORAN.py
 
       - name: Upload unsigned artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DORAN-Pro-unsigned-${{ env.VERSION }}
+          name: DORAN-Pro-unsigned-${{ env.FILE_VERSION }}
           path: dist/DORAN.exe
 
       - name: Upload to SignPath for code signing
@@ -75,21 +80,20 @@ jobs:
 
       - name: Wait for SignPath signing
         run: |
-          echo "Waiting 30 seconds for SignPath signing..."
+          echo "⏳ Waiting 30 seconds for SignPath signing..."
           Start-Sleep -Seconds 30
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            dist/DORAN.exe
+          files: dist/DORAN.exe
           body: |
             ### Changelog
             - Automated Nuitka build
             - Bundled WHOIS.exe v1.21
             - Fixed dependency inclusion
             - Signed build using SignPath
-            - Build version: v${{ env.VERSION }}
+            - Build version: ${{ env.FILE_VERSION }}
           draft: false
           prerelease: false
