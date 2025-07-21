@@ -23,25 +23,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install nuitka whois dnspython requests
 
-      - name: Extract version from tag
-        id: extract_version
+      - name: Set version
         shell: pwsh
         run: |
-          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]
-          if ($rawTag.StartsWith("v")) {
-            $version = $rawTag.Substring(1)
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            $rawTag = "${{ github.ref }}".Split("/")[-1]
+            $version = $rawTag.TrimStart("v")
+            $parts = $version.Split(".")
+            while ($parts.Count -lt 3) { $parts += "0" }
+            $version3 = $parts[0..2] -join "."
           } else {
-            $version = $rawTag
+            $version3 = "1.0.0"
           }
 
-          $parts = $version.Split(".")
-          while ($parts.Count -lt 3) {
-            $parts += "0"
-          }
-          $version3 = $parts[0..2] -join "."
-
-          echo "🔢 Version resolved: $version3"
+          echo "📦 Using version: $version3"
           "FILE_VERSION=$version3" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
 
       - name: Build with Nuitka
         shell: pwsh
