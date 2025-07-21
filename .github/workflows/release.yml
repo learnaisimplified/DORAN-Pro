@@ -19,12 +19,11 @@ jobs:
 
       - name: Extract version from tag
         id: extract_version
-        shell: bash
+        shell: pwsh
         run: |
           RAW_TAG="${GITHUB_REF##*/}"
           VERSION="${RAW_TAG#v}"
 
-          # Ensure version is in format X.Y.Z
           DOT_COUNT=$(echo "$VERSION" | tr -cd '.' | wc -c)
           if [ "$DOT_COUNT" -eq 1 ]; then
             VERSION="${VERSION}.0"
