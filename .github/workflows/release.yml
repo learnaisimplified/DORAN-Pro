@@ -23,17 +23,22 @@ jobs:
         run: |
           $rawTag = "${env:GITHUB_REF}".Split("/")[-1]      # Extract tag like "v1.0"
           $version = $rawTag.TrimStart("v")                  # Remove "v" prefix
-      
-          # Ensure version has 3 parts (X.Y.Z)
+          
+          # Split into parts and pad with zeros if needed
           $parts = $version.Split(".")
-          while ($parts.Count -lt 3) {
-            $parts += "0"
-          }
-          $fileVersion = $parts[0..2] -join "."              # Use only 3 parts
-      
+          
+          # File version needs exactly 3 parts (Major.Minor.Build)
+          $fileParts = @($parts[0], ($parts[1] ?? "0"), ($parts[2] ?? "0"))[0..2]
+          $fileVersion = $fileParts -join "."
+          
+          # Product version can use up to 4 parts
+          $productParts = @($parts[0], ($parts[1] ?? "0"), ($parts[2] ?? "0"), ($parts[3] ?? "0"))[0..3]
+          $productVersion = $productParts -join "."
+          
+          # Set environment variables
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "FILE_VERSION=$fileVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-
+          "PRODUCT_VERSION=$productVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install dependencies
         run: |
@@ -53,7 +58,7 @@ jobs:
             --windows-company-name="DORAN Pro" `
             --windows-product-name="DORAN Pro" `
             --windows-file-version="${{ env.FILE_VERSION }}" `
-            --windows-product-version="${{ env.FILE_VERSION }}" `
+            --windows-product-version="${{ env.PRODUCT_VERSION }}" `
             --output-dir=dist `
             src/DORAN.py
 
@@ -73,7 +78,7 @@ jobs:
             -F "ArtifactConfiguration=@signpath-artifact-config.xml" `
             -F "FileName=DORAN.exe"
 
-      - name: Wait for SignPath signing (optional manual polling logic or pause)
+      - name: Wait for SignPath signing
         run: |
           echo "Waiting 30 seconds for SignPath signing..."
           Start-Sleep -Seconds 30
