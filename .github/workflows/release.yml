@@ -21,17 +21,19 @@ jobs:
         id: extract_version
         shell: pwsh
         run: |
-          RAW_TAG="${GITHUB_REF##*/}"
-          VERSION="${RAW_TAG#v}"
+          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]
+          $version = $rawTag.TrimStart("v")
+      
+          # Ensure format is X.Y.Z
+          $dotCount = ($version -split '\.').Count - 1
+          if ($dotCount -eq 1) {
+            $version = "$version.0"
+          } elseif ($dotCount -eq 0) {
+            $version = "$version.0.0"
+          }
+      
+          "FILE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-          DOT_COUNT=$(echo "$VERSION" | tr -cd '.' | wc -c)
-          if [ "$DOT_COUNT" -eq 1 ]; then
-            VERSION="${VERSION}.0"
-          elif [ "$DOT_COUNT" -eq 0 ]; then
-            VERSION="${VERSION}.0.0"
-          fi
-
-          echo "FILE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
