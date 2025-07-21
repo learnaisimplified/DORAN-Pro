@@ -19,15 +19,17 @@ jobs:
 
       - name: Extract version from tag
         id: extract_version
+        shell: bash
         run: |
-          RAW_TAG="${{ github.ref_name }}"
+          RAW_TAG="${GITHUB_REF##*/}"
           VERSION="${RAW_TAG#v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "FILE_VERSION=${VERSION}.0" >> $GITHUB_ENV
 
-          # Parse and ensure it's in format X.Y.Z. If only X.Y, add .0
-          if [[ $(echo "$VERSION" | grep -o "\." | wc -l) -eq 1 ]]; then
+          # Ensure version is in format X.Y.Z
+          DOT_COUNT=$(echo "$VERSION" | tr -cd '.' | wc -c)
+          if [ "$DOT_COUNT" -eq 1 ]; then
             VERSION="${VERSION}.0"
+          elif [ "$DOT_COUNT" -eq 0 ]; then
+            VERSION="${VERSION}.0.0"
           fi
 
           echo "FILE_VERSION=$VERSION" >> $GITHUB_ENV
