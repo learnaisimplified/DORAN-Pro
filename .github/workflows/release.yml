@@ -21,24 +21,18 @@ jobs:
         id: extract_version
         shell: pwsh
         run: |
-          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]      # Extract tag like "v1.0"
-          $version = $rawTag.TrimStart("v")                  # Remove "v" prefix
-          
-          # Split into parts and pad with zeros if needed
+          $rawTag = "${env:GITHUB_REF}".Split("/")[-1]  # Extract tag like "v1.0"
+          $version = $rawTag.TrimStart("v")             # Remove "v" prefix
+      
+          # Ensure it's in the form of X.Y.Z
           $parts = $version.Split(".")
-          
-          # File version needs exactly 3 parts (Major.Minor.Build)
-          $fileParts = @($parts[0], ($parts[1] ?? "0"), ($parts[2] ?? "0"))[0..2]
-          $fileVersion = $fileParts -join "."
-          
-          # Product version can use up to 4 parts
-          $productParts = @($parts[0], ($parts[1] ?? "0"), ($parts[2] ?? "0"), ($parts[3] ?? "0"))[0..3]
-          $productVersion = $productParts -join "."
-          
-          # Set environment variables
-          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "FILE_VERSION=$fileVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "PRODUCT_VERSION=$productVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          while ($parts.Count -lt 3) {
+            $parts += "0"
+          }
+          $version3 = $parts[0..2] -join "."
+      
+          "FILE_VERSION=$version3" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      
 
       - name: Install dependencies
         run: |
@@ -46,6 +40,7 @@ jobs:
           pip install nuitka whois dnspython requests
 
       - name: Build with Nuitka
+        shell: pwsh
         run: |
           python -m nuitka `
             --onefile `
@@ -57,8 +52,8 @@ jobs:
             --include-module=socket,ssl,json,datetime,concurrent.futures,os,sys,time,hashlib `
             --windows-company-name="DORAN Pro" `
             --windows-product-name="DORAN Pro" `
-            --windows-file-version="${{ env.FILE_VERSION }}" `
-            --windows-product-version="${{ env.PRODUCT_VERSION }}" `
+            --windows-file-version="${env:FILE_VERSION}" `
+            --windows-product-version="${env:FILE_VERSION}" `
             --output-dir=dist `
             src/DORAN.py
 
