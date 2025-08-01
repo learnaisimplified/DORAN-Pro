@@ -33,7 +33,7 @@ jobs:
             while ($parts.Count -lt 3) { $parts += "0" }
             $version3 = $parts[0..2] -join "."
           } else {
-            $version3 = "1.0.0"
+            $version3 = "1.0.0.3"
           }
 
           echo "📦 Using version: $version3"
